@@ -5,12 +5,12 @@ import os
 
 # ---参数设置部分-----
 dpc_file = 'dpc.csv'
-posp_file = 'posp.xls'
+posp_file = 'posp.csv'
 
 # POSP起始圈数 即第一次交火的圈数 
-start_line = 58 
+start_line = 50
 # 轨道计数
-orbit_dpc = 13
+orbit_dpc = 3
 # orbit_posp = orbit_dpc
 
 # POSP轨道 用dpc计数转hex后获得
@@ -28,9 +28,9 @@ pd_dpc = pd.read_csv(dpc_file, header=0, sep=',')  # encoding='GB2312'
 # pd_posp =  pd.read_csv(posp_file, header=0, sep='\t')  # encoding='GB2312'
 
 ## POSP UTF-8 CSV格式
-# pd_dpc = pd.read_csv(dpc_file, header=0, sep=',')  # encoding='GB2312'
+pd_posp = pd.read_csv(posp_file, header=0, sep=',')  # encoding='GB2312'
 ## POSP GB2312格式 解包软件直接导出
-pd_posp =  pd.read_csv(posp_file, header=0, sep='\t' ,encoding='GB2312')  # encoding='GB2312'
+# pd_posp =  pd.read_csv(posp_file, header=0, sep='\t' ,encoding='GB2312')  # encoding='GB2312'
 
 
 # --------DPC数据计算--------
@@ -51,7 +51,7 @@ dpc_time.index = np.arange(len(dpc_time['DPC时间标签']))
 
 # --------POSP数据计算--------
 # 切片取出用于计算的数据
-posp_time = pd_posp.loc[:, ['轨道计数', '圈计数', 'GPS整秒时刻.190', 'GPS本地计时.190']]
+posp_time = pd_posp.loc[:, ['轨道计数', '圈计数', '当前工作模式', 'GPS整秒时刻.190', 'GPS本地计时.190']]
 
 # 挑选数据 选轨道号 选行数
 posp_time = posp_time[posp_time['轨道计数']  == orbit_posp]
