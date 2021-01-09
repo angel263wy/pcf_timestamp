@@ -14,7 +14,7 @@ orbit_dpc = 13
 # POSP轨道 用dpc计数转hex后获得
 # orbit_posp = f'0x00 {orbit_dpc:X}' if orbit_dpc>15 else f'0x00 0{orbit_dpc:X}'
 orbit_posp = orbit_dpc
-# orbit_posp = '0x00 0D'
+
 
 # ---参数设置部分结束-----
 
