@@ -7,14 +7,13 @@ import os
 dpc_file = 'dpc.csv'
 posp_file = 'posp.csv'
 
-# POSP起始圈数 即第一次交火的圈数 
-start_line = 50
 # 轨道计数
-orbit_dpc = 3
-# orbit_posp = orbit_dpc
+orbit_dpc = 8
+
 
 # POSP轨道 用dpc计数转hex后获得
-orbit_posp = f'0x00 {orbit_dpc:X}' if orbit_dpc>15 else f'0x00 0{orbit_dpc:X}'
+# orbit_posp = f'0x00 {orbit_dpc:X}' if orbit_dpc>15 else f'0x00 0{orbit_dpc:X}'
+orbit_posp = orbit_dpc
 # orbit_posp = '0x00 0D'
 
 # ---参数设置部分结束-----
@@ -25,12 +24,12 @@ now = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 ## DPC UTF-8 CSV格式
 pd_dpc = pd.read_csv(dpc_file, header=0, sep=',')  # encoding='GB2312'
 ## DPC GB2312格式 解包软件直接导出
-# pd_posp =  pd.read_csv(posp_file, header=0, sep='\t')  # encoding='GB2312'
+# pd_dpc =  pd.read_csv(dpc_file, header=0, sep='\t', encoding='GB2312')  # encoding='GB2312'
 
 ## POSP UTF-8 CSV格式
 pd_posp = pd.read_csv(posp_file, header=0, sep=',')  # encoding='GB2312'
 ## POSP GB2312格式 解包软件直接导出
-# pd_posp =  pd.read_csv(posp_file, header=0, sep='\t' ,encoding='GB2312')  # encoding='GB2312'
+# pd_posp =  pd.read_csv(posp_file, header=0, sep='\t', encoding='GB2312')  # encoding='GB2312'
 
 
 # --------DPC数据计算--------
@@ -55,7 +54,16 @@ posp_time = pd_posp.loc[:, ['轨道计数', '圈计数', '当前工作模式', '
 
 # 挑选数据 选轨道号 选行数
 posp_time = posp_time[posp_time['轨道计数']  == orbit_posp]
-posp_time = posp_time.iloc[start_line: , :]
+# posp_time = posp_time.iloc[start_line: , :]
+
+# 重新索引 以便自动对齐整秒部分
+posp_time.index = np.arange(len(posp_time['轨道计数']))
+# 如果整秒部分不一致 删除POSP首行数据重新判断 如果一致则退出循环
+for i in np.arange(len(posp_time['圈计数'])):
+    if dpc_time.loc[0, 'GPS秒脉冲整秒时间码'] != posp_time.loc[i, 'GPS整秒时刻.190']:
+        posp_time.drop(i, axis=0, inplace=True)
+    else:
+        break
 
 # 对15取余数 选前7个
 posp_time['筛选编号'] = np.arange(len(posp_time['圈计数'])) % 15
