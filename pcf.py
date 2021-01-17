@@ -4,11 +4,11 @@ import time
 import os
 
 # ---参数设置部分-----
-dpc_file = 'dpc.csv'
+dpc_file = 'dpc.xls'
 posp_file = 'posp.xls'
 
 # 轨道计数
-orbit_dpc = 13
+orbit_dpc = 16
 
 
 # POSP轨道 用dpc计数转hex后获得
@@ -22,9 +22,9 @@ now = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 
 ## 导入文件
 ## DPC UTF-8 CSV格式
-pd_dpc = pd.read_csv(dpc_file, header=0, sep=',')  # encoding='GB2312'
+# pd_dpc = pd.read_csv(dpc_file, header=0, sep=',')  # encoding='GB2312'
 ## DPC GB2312格式 解包软件直接导出
-# pd_dpc =  pd.read_csv(dpc_file, header=0, sep='\t', encoding='GB2312')  # encoding='GB2312'
+pd_dpc =  pd.read_csv(dpc_file, header=0, sep='\t', encoding='GB2312')  # encoding='GB2312'
 
 ## POSP UTF-8 CSV格式
 # pd_posp = pd.read_csv(posp_file, header=0, sep=',')  # encoding='GB2312'
@@ -35,7 +35,7 @@ pd_posp =  pd.read_csv(posp_file, header=0, sep='\t', encoding='GB2312')  # enco
 # --------DPC数据计算--------
 # 切片取出用于计算的数据
 print('--------DPC数据处理开始--------')
-dpc_time = pd_dpc.loc[:, ['运行轨序号', '帧计数', 'GPS秒脉冲整秒时间码', '秒脉冲内自守时计数', '一圈内图像序号']]
+dpc_time = pd_dpc.loc[:, ['运行轨序号', '帧计数', '轨道内部时间码', 'GPS秒脉冲整秒时间码', '秒脉冲内自守时计数', '一圈内图像序号']]
 
 # 挑选数据 选轨道号 选偶数帧
 dpc_time = dpc_time[dpc_time['运行轨序号']  == orbit_dpc ]
@@ -59,9 +59,11 @@ for i in np.arange(1,len(dpc_time['帧计数'])):
 print(f'--------DPC回卷处理完成 最后指针为{pt_index}--------')
 
 dpc_time = dpc_time[(dpc_time['一圈内图像序号'] % 2 ) == 0 ]
-
 # 时间码计算
 dpc_time['DPC时间标签'] = dpc_time['GPS秒脉冲整秒时间码'] + dpc_time['秒脉冲内自守时计数'] / 1000000
+
+# 当前帧轨内计时计算
+# dpc_time['轨道内部时间码'] = dpc_time['轨道内部时间码'] / 600000
 
 # 重新索引 方便组合
 dpc_time.index = np.arange(len(dpc_time['DPC时间标签']))
@@ -71,7 +73,7 @@ print('--------DPC数据处理完成 POSP数据处理开始--------')
 
 # --------POSP数据计算--------
 # 切片取出用于计算的数据
-posp_time = pd_posp.loc[:, ['轨道计数', '圈计数', '当前工作模式', 'GPS整秒时刻.190', 'GPS本地计时.190']]
+posp_time = pd_posp.loc[:, ['轨道计数', '圈计数', '载荷工作流程计时', '当前工作模式', 'GPS整秒时刻.190', 'GPS本地计时.190']]
 
 # 挑选数据 选轨道号 选行数
 posp_time = posp_time[posp_time['轨道计数']  == orbit_posp]
@@ -113,10 +115,10 @@ for i in np.arange(len(posp_time['圈计数'])):
 # 对15取余数 选前7个
 posp_time['筛选编号'] = np.arange(len(posp_time['圈计数'])) % 15
 posp_time = posp_time[posp_time['筛选编号'].isin([0,1,2,3,4,5,6])]
-
 # 时间码计算
 posp_time['POSP时间标签'] = posp_time['GPS整秒时刻.190'] + posp_time['GPS本地计时.190'] / 1000000
-
+# 当前帧轨内计时计算
+posp_time['载荷工作流程计时'] = posp_time['载荷工作流程计时'] / 600000
 # 重新索引 方便组合
 posp_time.index = np.arange(len(posp_time['POSP时间标签']))
 
