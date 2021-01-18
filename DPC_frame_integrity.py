@@ -15,6 +15,7 @@ from pathlib import Path
 
 now = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 
+# 日志记录
 def log(filename, context):
     with open(filename, 'a+', encoding='utf-8') as f:
         f.write(context)
@@ -22,6 +23,7 @@ def log(filename, context):
         print(context)
 
 
+# 帧完整性检查
 def frame_check(filename, fout):
     log(fout, f'文件名: {filename}')
     pd_csv =  pd.read_csv(filename, header=0, sep='\t', encoding='GB2312')  # encoding='GB2312'
@@ -52,25 +54,37 @@ def frame_check(filename, fout):
     c = pd_csv.loc[len(pd_csv.index)-1, '工作流程表序号']
     d = pd_csv.loc[len(pd_csv.index)-1, '源码.4']
     log(fout, f'*末帧第{a}轨, 第{b}帧, {c}, GPS整秒时间:{d}')
-    log(fout, '--------------------')
+    
 
-# filename = 'dpc1.xls'
+
+# 本底图像处理
+def dkg_check(dkg_files, fout):
+    if len(dkg_files) == 0 :
+        log(fout, f'未找到本底图像')
+    else:
+        raw_data = np.fromfile(dkg_files[0], dtype=np.uint16)  # 读取一幅本底
+        a, b = np.max(raw_data), np.min(raw_data)
+        c, d = np.mean(raw_data), np.std(raw_data)
+        log(fout, f'**** 单幅本底图像统计: 最大{a}, 最小{b}, 均值{round(c)}, 标准差{round(d)}')
+        log(fout, '--------------------')
 
 # filelist = glob.glob(f'DPC-DPC-INFO-2021*.xls')
 current_dir = Path.cwd()
 dirs = glob.glob(f'{current_dir}/SAT_NET_*')
 
-out = f'DPC帧连续判断结果-{now}.txt'
+out = f'DPC图像判断结果-{now}.txt'
 # with open(out, 'a+', encoding='utf-8') as f:
 #     pass
 
 
 
-for dir in dirs:
-    fname = glob.glob(f'{dir}/DPC-DPC-INFO-2021*.xls')
+for dir in dirs:    
+    fname = glob.glob(f'{dir}/DPC-DPC-INFO-2021*.xls')  # 辅助数据
+    dkg_file = glob.glob(f'{dir}/RAW_ImageData/*_08.raw')  # 本底图像
     if len(fname) == 0:
         pass
     else:        
         frame_check(fname[0], out)
+        dkg_check(dkg_file, out)
     
 os.system('start'+ ' ' + out)    
