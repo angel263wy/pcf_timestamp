@@ -66,7 +66,7 @@ def dkg_check(dkg_files, fout):
         a, b = np.max(raw_data), np.min(raw_data)
         c, d = np.mean(raw_data), np.std(raw_data)
         log(fout, f'**** 单幅本底图像统计: 最大{a}, 最小{b}, 均值{round(c)}, 标准差{round(d)}')
-        log(fout, '--------------------')
+    log(fout, '--------------------')
 
 # filelist = glob.glob(f'DPC-DPC-INFO-2021*.xls')
 current_dir = Path.cwd()
