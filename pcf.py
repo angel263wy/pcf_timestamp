@@ -4,16 +4,21 @@ import time
 import os
 
 # ---参数设置部分-----
+satellite = 'DQ-1'  # 卫星型号 DQ-1 或者 GF-5
+# satellite = 'GF-5'  # 卫星型号 DQ-1 或者 GF-5
+posp_frame_cnt = 190 if satellite == 'DQ-1' else 174
+
+
 dpc_file = 'dpc.xls'
 posp_file = 'posp.xls'
-
+# posp_file = 'posp1.csv'
 # 轨道计数
-orbit_dpc = 16
+orbit_dpc = 2
 
 
 # POSP轨道 用dpc计数转hex后获得
 # orbit_posp = f'0x00 {orbit_dpc:X}' if orbit_dpc>15 else f'0x00 0{orbit_dpc:X}'
-orbit_posp = orbit_dpc
+orbit_posp = 3
 
 
 # ---参数设置部分结束-----
@@ -73,7 +78,7 @@ print('--------DPC数据处理完成 POSP数据处理开始--------')
 
 # --------POSP数据计算--------
 # 切片取出用于计算的数据
-posp_time = pd_posp.loc[:, ['轨道计数', '圈计数', '载荷工作流程计时', '当前工作模式', 'GPS整秒时刻.190', 'GPS本地计时.190']]
+posp_time = pd_posp.loc[:, ['轨道计数', '圈计数', '载荷工作流程计时', '当前工作模式', f'GPS整秒时刻.{posp_frame_cnt}', f'GPS本地计时.{posp_frame_cnt}']]
 
 # 挑选数据 选轨道号 选行数
 posp_time = posp_time[posp_time['轨道计数']  == orbit_posp]
@@ -107,7 +112,7 @@ print(f'--------POSP回卷处理完成  最后指针为{pt_index}--------')
 
 # 如果整秒部分不一致 删除POSP首行数据重新判断 如果一致则退出循环
 for i in np.arange(len(posp_time['圈计数'])):
-    if dpc_time.loc[0, 'GPS秒脉冲整秒时间码'] != posp_time.loc[i, 'GPS整秒时刻.190']:
+    if dpc_time.loc[0, 'GPS秒脉冲整秒时间码'] != posp_time.loc[i, f'GPS整秒时刻.{posp_frame_cnt}']:
         posp_time.drop(i, axis=0, inplace=True)
     else:
         break
@@ -116,7 +121,7 @@ for i in np.arange(len(posp_time['圈计数'])):
 posp_time['筛选编号'] = np.arange(len(posp_time['圈计数'])) % 15
 posp_time = posp_time[posp_time['筛选编号'].isin([0,1,2,3,4,5,6])]
 # 时间码计算
-posp_time['POSP时间标签'] = posp_time['GPS整秒时刻.190'] + posp_time['GPS本地计时.190'] / 1000000
+posp_time['POSP时间标签'] = posp_time[f'GPS整秒时刻.{posp_frame_cnt}'] + posp_time[f'GPS本地计时.{posp_frame_cnt}'] / 1000000
 # 当前帧轨内计时计算
 posp_time['载荷工作流程计时'] = posp_time['载荷工作流程计时'] / 600000
 # 重新索引 方便组合
@@ -130,12 +135,12 @@ timpstamp = pd.concat([dpc_time, posp_time], axis=1)
 
 
 #计算时间差
-timpstamp['观测时间差'] = timpstamp['DPC时间标签'] - timpstamp['POSP时间标签']
+timpstamp['观测时间差'] = (timpstamp['DPC时间标签'] - timpstamp['POSP时间标签'])*1000
 timpstamp = timpstamp.dropna(how='any')
 # 输出
-fout = 'pcf_timestamp-'+now+'.csv'
+fout = f'第{orbit_dpc}轨-pcf_timestamp-{now}.csv'
 timpstamp.to_csv(fout, index=False, encoding='GB2312')
-os.system('start'+ ' ' + fout)
+os.system(f'start {fout}')
 
 
 print('end')
